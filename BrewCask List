@@ -1,0 +1,14 @@
+
+
+* brew cask install sogouinput
+# sourcetree
+brew cask install sourcetree
+
+# sublime text
+brew cask install sublime-text
+
+# iterm2
+brew cask install iterm2
+
+# r语言
+brew cask install r-gui
