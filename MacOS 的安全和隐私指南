@@ -1,0 +1,359 @@
+# MacOS 的安全和隐私指南
+
+> * 原文地址：[macOS Security and Privacy Guide](https://github.com/drduh/macOS-Security-and-Privacy-Guide)
+> * 原文作者：[drduh](https://github.com/drduh)
+> * 译文出自：[掘金翻译计划](https://github.com/xitu/gold-miner)
+> * 译者：[Nicolas(Yifei) Li](https://github.com/yifili09), [MAYDAY1993](https://github.com/MAYDAY1993), [DeadLion](https://github.com/DeadLion)
+> * 校对者：[lovelyCiTY](https://github.com/lovelyCiTY), [sqrthree](https://github.com/sqrthree)
+> * 这个 [链接](https://github.com/xitu/macOS-Security-and-Privacy-Guide/compare/master...drduh:master) 用来查看本翻译与英文版是否有差别（如果你没有看到 README.md 发生变化，那就意味着这份翻译文档是最新的）。
+
+这里汇集了一些想法，它们是有关如何保护运行了 macOS 10.12 "Sierra" 操作系统（以前是 **OS X**）的现代化苹果 Mac 电脑，也包含了一些提高个人网络隐私的小贴士。
+
+这份指南的目标读者是那些希望采用企业级安全标准的"高级用户"，但是也适用于那些想在 Mac 上提高个人隐私和安全性的初级用户们。
+
+一个系统的安全与否完全取决于管理员的能力。没有一个单独的技术、软件，或者任何一个科技能保证计算机完全安全；现代的计算机和操作系统都是非常复杂的，并且需要大量的增量修改才能获得在安全性和隐私性上真正意义的提高。
+
+**免责声明**：若按照以下操作后对您的 Mac 电脑造成损伤，**望您自行负责**。
+
+如果你发现了本文中的错误或者有待改进的内容，请提交 `pull request` 或者 [创建一个 `issue`](https://github.com/drduh/OS-X-Security-and-Privacy-Guide/issues).
+
+- [基础知识](#基础知识)
+- [固件](#固件)
+- [准备和安装 macOS](#准备和安装-macos)
+    - [虚拟机](#虚拟机)
+- [首次启动](#首次启动)
+- [管理员和普通用户账号](#管理员和普通用户账号)
+- [对整个磁盘进行数据加密](#对整个磁盘进行数据加密)
+- [防火墙](#防火墙)
+    - [应用程序层的防火墙](#应用程序层的防火墙)
+    - [第三方防火墙](#第三方防火墙)
+    - [内核级的数据包过滤](#内核级的数据包过滤)
+- [系统服务](#系统服务)
+- [Spotlight 建议](#spotlight-建议)
+- [Homebrew](#homebrew)
+- [DNS](#dns)
+    - [Hosts 文件](#hosts-文件)
+    - [Dnsmasq](#dnsmasq)
+      - [检测 DNSSEC 验证](#检测-dnssec-验证)
+    - [DNSCrypt](#dnscrypt)
+- [Captive portal](#captive-portal)
+- [证书授权](#证书授权)
+- [OpenSSL](#openssl)
+- [Curl](#curl)
+- [Web](#web)
+    - [代理](#代理)
+    - [浏览器](#浏览器)
+    - [插件](#插件)
+- [PGP/GPG](#pgpgpg)
+- [OTR](#otr)
+- [Tor](#tor)
+- [VPN](#vpn)
+- [病毒和恶意软件](#病毒和恶意软件)
+- [系统完整性保护](#系统完整性保护)
+- [Gatekeeper 和 XProtect](#gatekeeper-和-xprotect)
+- [密码](#密码)
+- [备份](#备份)
+- [Wi-Fi](#wi-fi)
+- [SSH](#ssh)
+- [物理访问](#物理访问)
+- [系统监控](#系统监控)
+    - [OpenBSM 监测](#openbsm-监测)
+    - [DTrace](#dtrace)
+    - [运行](#运行)
+    - [网络](#网络)
+- [二进制白名单](#二进制白名单)
+- [其它](#其它)
+- [相关软件](#相关软件)
+- [其它资源](#其它资源)
+
+## 基础知识
+
+安全标准的最佳实践适用于以下几点:
+
+* 创建一个威胁模型
+    *  考虑下什么是你需要保护的，避免谁的侵害？你的对手会是一个 [TLA](https://theintercept.com/document/2015/03/10/strawhorse-attacking-macos-ios-software-development-kit/) 机构么？（如果是的，你需要考虑替换使用 [OpenBSD](http://www.openbsd.org)），或者是一个在网络上好管闲事的偷听者，还是一起针对你精心策划的 [apt](https://en.wikipedia.org/wiki/Advanced_persistent_threat) 网络攻击？
+    * 研究并识别出[那些威胁](https://www.usenix.org/system/files/1401_08-12_mickens.pdf)，想一想如何减少被攻击的面。
+
+* 保持系统更新
+    * 请为你的系统和软件持续更新补丁！更新补丁！更新补丁！（重要的事情说三遍）。
+    * 可以使用 `App Store` 应用程序来完成对 `macOS` 系统的更新，或者使用命令行工具 `softwareupdate`，这两个都不需要注册苹果账号。
+    * 请为那些你经常使用的程序，订阅公告邮件列表（例如，[Apple 安全公告](https://lists.apple.com/mailman/listinfo/security-announce)）。
+
+* 对敏感数据进行加密
+    * 除了对整个磁盘加密之外，创建一个或者多个加密的容器，用它们来保存一些你的密码、秘钥、那些个人文件和余下的其他数据。
+    * 这有助于减少数据泄露造成的危害。
+
+* 经常备份数据
+    * 定期创建[数据备份](https://www.amazon.com/o/ASIN/0596102461/backupcentral)，并且做好遇到危机时候的数据恢复工作。
+    * 在拷贝数据备份到外部存储介质或者 “云” 系统中之前，始终对它们进行加密。
+    * 定期对备份进行测试，验证它们是可以工作的。例如，访问某一部分文件或者对比哈希校验值。
+
+* 注意钓鱼网站
+    * 最后，具有高安全意识的管理员能大大降低系统的安全风险。
+    * 在安装新软件的时候，请加倍小心。始终选择[免费的软件](https://www.gnu.org/philosophy/free-sw.en.html)和开源的软件（[当然了，macOS 不是开源的](https://superuser.com/questions/19492/is-mac-os-x-open-source))
+
+## 固件
+
+为固件设定一个密码，它能阻止除了你的启动盘之外的任何其它设备启动你的 Mac 电脑。它也能设定成每次启动时为必选项。
+
+[当你的计算机被盗或者丢失的时候，这个功能是非常有用的](https://www.ftc.gov/news-events/blogs/techftc/2015/08/virtues-strong-enduser-device-controls)，该功能可以防止直接内存访问从而可以读取您的 FileVault 密码并注入诸如 [pcileech](https://github.com/ufrisk/pcileech) 之类的内核模块这种攻击方式，因为唯一能重置固件密码的方式是通过 `Apple Store`，或者使用一个 [SPI 程序](https://reverse.put.as/2016/06/25/apple-efi-firmware-passwords-and-the-scbo-myth/)，例如 [Bus Pirate](http://ho.ax/posts/2012/06/unbricking-a-macbook/) 或者其它刷新电路的程序。
+
+1. 开始时，按下 `Command` 和 `R` 键来启动[恢复模式 / Recovery Mode](https://support.apple.com/en-au/HT201314)。
+
+2. 当出现了恢复模式的界面，从 `Utilities / 工具` 菜单中选择 **Firmware Password Utility / 固件密码实用工具**。
+
+3. 在固件工具窗口中，选择 **Turn On Firmware Password / 打开固件密码**。
+
+4. 输入一个新的密码，之后在 **Verify / 验证** 处再次输入一样的密码。
+
+5. 选择 **Set Password / 设定密码**。
+
+6. 选择 **Quit Firmware Utility / 退出固件工具** 关闭固件密码实用工具。
+
+7. 选择 Apple 菜单，并且选择重新启动或者关闭计算机。
+
+这个固件密码会在下一次启动后激活。为了验证这个密码，在启动过程中按住 `Alt` 键 - 按照提示输入密码。
+
+当启动进操作系统以后。固件密码也能通过 `firmwarepasswd` 工具管理。例如，从另一个模式启动的时候可以这样：
+
+$ sudo firmwarepasswd -setpasswd -setmode command
+
+输入一个密码然后重启。
+
+<img width="750" alt="Using a Dediprog SF600 to dump and flash a 2013 MacBook SPI Flash chip to remove a firmware password, sans Apple" src="https://cloud.githubusercontent.com/assets/12475110/17075918/0f851c0c-50e7-11e6-904d-0b56cf0080c1.png">
+
+**在没有 Apple 技术支持下，使用 [Dediprog SF600](http://www.dediprog.com/pd/spi-flash-solution/sf600) 来输出并且烧录一个 2013 款的 MacBook SPI 闪存芯片，或者移除一个固件密码**
+
+可参考 [HT204455](https://support.apple.com/en-au/HT204455), [LongSoft/UEFITool](https://github.com/LongSoft/UEFITool) 或者 [chipsec/chipsec](https://github.com/chipsec/chipsec) 了解更多信息。
+
+## 准备和安装 macOS
+
+有很多种方式来安装一个全新的 macOS 副本。
+
+最简单的方式是在启动过程中按住 `Command` 和 `R` 键进入 [Recovery Mode / 恢复模式](https://support.apple.com/en-us/HT201314)。系统镜像文件能够直接从 `Apple` 官网上下载并且使用。然而，这样的方式会以明文形式直接在网络上暴露出你的机器识别码和其它的识别信息。
+
+<img width="500" alt="PII is transmitted to Apple in plaintext when using macOS Recovery" src="https://cloud.githubusercontent.com/assets/12475110/20312189/8987c958-ab20-11e6-90fa-7fd7c8c1169e.png">
+
+**在 macOS 恢复过程中，捕获到未加密的 HTTP 会话包**
+
+另一种方式是，从 [App Store](https://itunes.apple.com/us/app/macos-sierra/id1127487414) 或者其他地方下载 **macOS Sierra** 安装程序，之后创建一个自定义可安装的系统镜像。
+
+这个 macOS Sierra 安装应用程序是经过[代码签名的](https://developer.apple.com/library/mac/documentation/Security/Conceptual/CodeSigningGuide/Procedures/Procedures.html#//apple_ref/doc/uid/TP40005929-CH4-SW6)，它可以使用 `code sign` 命令来验证并确保你接收到的是一个正版文件的拷贝。
+
+```
+$ codesign -dvv /Applications/Install\ macOS\ Sierra.app
+Executable=/Applications/Install macOS Sierra.app/Contents/MacOS/InstallAssistant
+Identifier=com.apple.InstallAssistant.Sierra
+Format=app bundle with Mach-O thin (x86_64)
+CodeDirectory v=20200 size=297 flags=0x200(kill) hashes=5+5 location=embedded
+Signature size=4167
+Authority=Apple Mac OS Application Signing
+Authority=Apple Worldwide Developer Relations Certification Authority
+Authority=Apple Root CA
+Info.plist entries=30
+TeamIdentifier=K36BKF7T3D
+Sealed Resources version=2 rules=7 files=137
+Internal requirements count=1 size=124
+```
+
+macOS 安装程序也可以由 `createinstallmedia` 工具制作，它在 `Install macOS Sierra.app/Contents/Resources/` 文件路径中。请参考[为 macOS 制作一个启动安装程序](https://support.apple.com/en-us/HT201372)，或者直接运行这个命令（不需要输入任何参数），看看它是如何工作的。
+
+**注意** Apple 的安装程序[并不能跨版本工作](https://github.com/drduh/OS-X-Security-and-Privacy-Guide/issues/120)。如果你想要创造一个 10.12 的镜像，例如，以下指令也必须要在 10.12 的机器上运行!
+
+为了创建一个 **macOS USB 启动安装程序**，需要挂载一个 USB 驱动器，清空它的内容、进行重新分区，之后使用 `createinstallmedia` 工具:
+
+```
+$ diskutil list
+[Find disk matching correct size, usually "disk2"]
+
+$ diskutil unmountDisk /dev/disk2
+
+$ diskutil partitionDisk /dev/disk2 1 JHFS+ Installer 100%
+
+$ cd /Applications/Install\ macOS\ Sierra.app
+
+$ sudo ./Contents/Resources/createinstallmedia --volume /Volumes/Installer --applicationpath /Applications/Install\ macOS\ Sierra.app --nointeraction
+Erasing Disk: 0%... 10%... 20%... 30%... 100%...
+Copying installer files to disk...
+Copy complete.
+Making disk bootable...
+Copying boot files...
+Copy complete.
+Done.
+```
+
+为了创建一个自定义、可安装的镜像，能用它恢复一台 Mac 电脑，你需要找到 `InstallESD.dmg`，这个文件也包含在 `Install macOS Sierra.app` 中。
+
+通过 `Finder` 找到，并在这个应用程序图标上点击鼠标右键，选择 **Show Package Contents / 显示包内容**，之后从 **Contents / 内容** 进入到 **SharedSupport / 共享支持**，找到 `InstallESD.dmg` 文件。
+
+你能通过 `openssl sha1 InstallESD.dmg` 、`shasum -a 1 InstallESD.dmg` 或者 `shasum -a 256 InstallESD.dmg` 得到的加密过的哈希值[验证](https://support.apple.com/en-us/HT201259)来确保你得到的是同一份正版拷贝（在 Finder 中，你能把文件直接拷贝到终端中，它能提供这个文件的完整路径地址）。
+
+可以参考 [HT204319](https://support.apple.com/en-us/HT204319)，它能确定你最初采购来的计算机使用了哪个版本的 macOS，或者哪个版本适合你的计算机。
+
+可以参考 [InstallESD_Hashes.csv](https://github.com/drduh/OS-X-Security-and-Privacy-Guide/blob/master/InstallESD_Hashes.csv) 这个在我代码仓库中的文件，它是现在和之前该版本文件的哈希值。你也可以使用 Google 搜索这些加密的哈希值，确保这个文件是正版且没有被修改过的。
+
+可以使用 [MagerValp/AutoDMG](https://github.com/MagerValp/AutoDMG) 来创建这个镜像文件，或者手动创建、挂载和安装这个操作系统到一个临时镜像中:
+
+    $ hdiutil attach -mountpoint /tmp/install_esd ./InstallESD.dmg
+
+    $ hdiutil create -size 32g -type SPARSE -fs HFS+J -volname "macOS" -uid 0 -gid 80 -mode 1775 /tmp/output.sparseimage
+
+    $ hdiutil attach -mountpoint /tmp/os -owners on /tmp/output.sparseimage
+
+    $ sudo installer -pkg /tmp/install_esd/Packages/OSInstall.mpkg -tgt /tmp/os -verbose
+
+这一步需要花费一些时间，请耐心等待。你能使用 `tail -F /var/log/install.log` 命令在另一个终端的窗口内查看进度。
+
+**（可选项）** 安装额外的软件，例如，[Wireshark](https://www.wireshark.org/download.html):
+
+    $ hdiutil attach Wireshark\ 2.2.0\ Intel\ 64.dmg
+
+    $ sudo installer -pkg /Volumes/Wireshark/Wireshark\ 2.2.0\ Intel\ 64.pkg -tgt /tmp/os
+
+    $ hdiutil unmount /Volumes/Wireshark
+
+遇到安装错误时，请参考 [MagerValp/AutoDMG/wiki/Packages-Suitable-for-Deployment](https://github.com/MagerValp/AutoDMG/wiki/Packages-Suitable-for-Deployment)，使用 [chilcote/outset](https://github.com/chilcote/outset) 来替代解决首次启动时候的包和脚本。
+
+当你完成的时候，分离、转换并且验证这个镜像:
+
+    $ hdiutil detach /tmp/os
+
+    $ hdiutil detach /tmp/install_esd
+
+    $ hdiutil convert -format UDZO /tmp/output.sparseimage -o ~/sierra.dmg
+
+    $ asr imagescan --source ~/sierra.dmg
+
+现在，`sierra.dmg` 已经可以被用在一个或者多个 Mac 电脑上了。它能继续自定义化这个镜像，比如包含预先定义的用户、应用程序、预置参数等。
+
+这个镜像能使用另一个在 [Target Disk Mode / 目标磁盘模式](https://support.apple.com/en-us/HT201462) 下的 Mac 进行安装，或者从 USB 启动安装盘安装。
+
+为了使用 **Target Disk Mode / 目标磁盘模式**，按住 `T` 键的同时启动 Mac 电脑，并且通过 `Firewire` 接口，`Thunderbolt` 接口或者 `USB-C` 线连接另外一台 Mac 电脑。
+
+如果你没有其它 Mac 电脑，通过启动的时候，按住 **Option** 键用 USB 安装盘启动，把 `sierra.dmg` 和其它需要的文件拷贝到里面。
+
+执行 `diskutil list` 来识别连接着的 Mac 磁盘，通常是 `/dev/disk2`
+
+**（可选项）** 一次性[安全清除](https://www.backblaze.com/blog/securely-erase-mac-ssd/)磁盘（如果之前通过 FileVault 加密，该磁盘必须先要解锁，并且装载在 `/dev/disk3s2`）:
+
+    $ sudo diskutil secureErase freespace 1 /dev/disk3s2
+
+把磁盘分区改成 `Journaled HFS+` 格式:
+
+    $ sudo diskutil unmountDisk /dev/disk2
+
+    $ sudo diskutil partitionDisk /dev/disk2 1 JHFS+ macOS 100%
+
+把该镜像还原到新的卷中:
+
+    $ sudo asr restore --source ~/sierra.dmg --target /Volumes/macOS --erase --buffersize 4m
+
+你也能使用 **Disk Utility / 磁盘工具** 应用程序来清除连接着的 Mac 磁盘，之后将 `sierra.dmg` 还原到新创建的分区中。
+
+如果你正确按照这些步骤执行，该目标 Mac 电脑应该安装了新的 macOS Sierra 了。
+
+如果你想传送一些文件，把它们拷贝到一个共享文件夹，例如在挂载磁盘的镜像中， `/Users/Shared`，例如，`cp Xcode_8.0.dmg /Volumes/macOS/Users/Shared`
+
+<img width="1280" alt="Finished restore install from USB recovery boot" src="https://cloud.githubusercontent.com/assets/12475110/14804078/f27293c8-0b2d-11e6-8e1f-0fb0ac2f1a4d.png">
+
+**完成从 USB 启动的还原安装**
+
+这里还没有大功告成！除非你使用 [AutoDMG](https://github.com/MagerValp/AutoDMG) 创建了镜像，或者把 macOS 安装在你 Mac 上的其它分区内，你需要创建一块还原分区（为了使用对整个磁盘加密的功能）。你能使用 [MagerValp/Create-Recovery-Partition-Installer](https://github.com/MagerValp/Create-Recovery-Partition-Installer) 或者按照以下步骤:
+
+请下载 [RecoveryHDUpdate.dmg](https://support.apple.com/downloads/DL1464/en_US/RecoveryHDUpdate.dmg) 这个文件。
+
+```
+RecoveryHDUpdate.dmg
+SHA-256: f6a4f8ac25eaa6163aa33ac46d40f223f40e58ec0b6b9bf6ad96bdbfc771e12c
+SHA-1:   1ac3b7059ae0fcb2877d22375121d4e6920ae5ba
+```
+
+添加并且扩展这个安装程序，之后执行以下命令:
+
+```
+$ hdiutil attach RecoveryHDUpdate.dmg
+
+$ pkgutil --expand /Volumes/Mac\ OS\ X\ Lion\ Recovery\ HD\ Update/RecoveryHDUpdate.pkg /tmp/recovery
+
+$ hdiutil attach /tmp/recovery/RecoveryHDUpdate.pkg/RecoveryHDMeta.dmg
+
+$ /tmp/recovery/RecoveryHDUpdate.pkg/Scripts/Tools/dmtest ensureRecoveryPartition /Volumes/macOS/ /Volumes/Recovery\ HD\ Update/BaseSystem.dmg 0 0 /Volumes/Recovery\ HD\ Update/BaseSystem.chunklist
+```
+
+必要的时候把 `/Volumes/macOS` 替换成以目标磁盘启动的 Mac 的路径。
+
+这个步骤需要花几分钟才能完成。再次执行 `diskutil list` 来确保 **Recovery HD** 已经存在 `/dev/disk2` 或者相似的路径下。
+
+一旦你完成了这些，执行 `hdituil unmount /Volumes/macOS` 命令弹出磁盘，之后关闭以目标磁盘模式启动的 Mac 电脑。
+
+### 虚拟机
+
+在虚拟机内安装 macOS，可以使用 [VMware Fusion](https://www.vmware.com/products/fusion.html) 工具，按照上文中的说明来创建一个镜像。你**不需要**再下载，也不需要手动创建还原分区。
+
+```
+VMware-Fusion-8.5.6-5234762.dmg
+SHA-256: 57a879095c9fcce0066bea0d3c203571689fb53205915fda156c0d742f7c7ad2
+SHA-1:   b7315d00a7c92dbad280d0f01f42dd8b56d96040
+ ```
+
+选择 **Install OS X from the recovery parition** 这个安装方法。可自定义配置任意的内存和 CPU，之后完成设置。默认情况下，这个虚拟机应该进入 [Recovery Mode / 还原模式](https://support.apple.com/en-us/HT201314)。
+
+在还原模式中，选择一个语言，之后在菜单条中由 Utilities 打开 Terminal。
+
+在虚拟机内，输入 `ifconfig | grep inet` — 你应该能看到一个私有地址，比如 `172.16.34.129`
+
+在 Mac 宿主机内，输入 `ifconfig | grep inet` — 你应该能看到一个私有地址，比如 `172.16.34.1`
+
+通过修改 Mac 宿主机内的文件让可安装镜像对虚拟器起作用，比如，修改 `/etc/apache2/htpd.conf` 并且在该文件最上部增加以下内容：(使用网关分配给 Mac 宿主机的地址和端口号 80):
+
+    Listen 172.16.34.1:80
+
+在 Mac 宿主机上，把镜像链接到 Apache 网络服务器目录:
+
+    $ sudo ln ~/sierra.dmg /Library/WebServer/Documents
+
+在 Mac 宿主机的前台运行 Apache:
+
+    $ sudo httpd -X
+
+在虚拟机上通过本地网络命令 `asr`，安装镜像文件到卷分区内:
+
+```
+-bash-3.2# asr restore --source http://172.16.34.1/sierra.dmg --target /Volumes/Macintosh\ HD/ --erase --buffersize 4m
+    Validating target...done
+    Validating source...done
+    Erase contents of /dev/disk0s2 (/Volumes/Macintosh HD)? [ny]: y
+    Retrieving scan information...done
+    Validating sizes...done
+    Restoring  ....10....20....30....40....50....60....70....80....90....100
+    Verifying  ....10....20....30....40....50....60....70....80....90....100
+    Remounting target volume...done
+```
+
+完成后，在 `sudo httpd -X` 窗口内通过 `Control` 和 `C` 组合键停止在宿主机 Mac 上运行的  Apache 网络服务器服务，并且通过命令 `sudo rm /Library/WebServer/Documents/sierra.dmg` 删除镜像备份文件。
+
+在虚拟机内，在左上角 Apple 菜单中选择 **Startup Disk**，选择硬件驱动器并重启你的电脑。你可能想在初始化虚拟机启动的时候禁用网络适配器。
+
+例如，在访问某些有风险的网站之前保存虚拟机的快照，并在之后用它还原该虚拟机。或者使用一个虚拟机来安装和使用有潜在问题的软件。
+
+## 首次启动
+
+**注意** 在设置 macOS 之前，请先断开网络连接并且配置一个防火墙。然而，装备有触摸条（`Touch Bar`）的 [2016 最新款 MacBook](https://www.ifixit.com/Device/MacBook_Pro_15%22_Late_2016_Touch_Bar)，它[需要在线激活系统](https://onemoreadmin.wordpress.com/2016/11/27/the-untouchables-apples-new-os-activation-for-touch-bar-macbook-pros/).
+
+在首次启动时，按住 `Command` `Option` `P` `R` 键位组合，它用于[清除 NVRAM](https://support.apple.com/en-us/HT204063)。
+
+当 macOS 首次启动时，你会看到 **Setup Assistant / 设置助手** 的欢迎画面。
+
+请在创建你个人账户的时候，使用一个没有任何提示的[高安全性密码](http://www.explainxkcd.com/wiki/index.php/936:_Password_Strength)。
+
+如果你在设置账户的过程中使用了真实的名字，你得意识到，你的[计算机的名字和局域网的主机名](https://support.apple.com/kb/PH18720)将会因为这个名字而泄露 (例如，**John Applesseed's MacBook**)，所以这个名字会显示在局域网络和一些配置文件中。这两个名字都能在 **System Preferences / 系统配置 > Sharing / 共享** 菜单中或者以下命令来改变:
+
+    $ sudo scutil --set ComputerName your_computer_name
+
+    $ sudo scutil --set LocalHostName your_hostname
+
+## 管理员和普通用户账号
+
+管理员账户始终是第一个账户。管理员账户是管理组中的成员并且有访问 `sudo` 的能力，允许它们修改其它账户，特别是 `root`，赋予它们对系统更高效的控制权。管理员执行的任何程序也有可能获得一样的权限，这就造成了一个安全风险。类似于 `sudo` 这样的工具[都有一些能被利用的弱点](https://bogner.sh/2014/03/another-mac-os-x-sudo-password-bypass/)，例如在默认管理员账户运行的情况下，并行打开的程序或者很多系统的设定都是[处于解锁的状态](http://csrc.nist.gov/publications/drafts/800-179/sp800_179_draft.pdf) [p. 61–62]。[Apple](https://help.apple.com/machelp/mac/10.12/index.html#/mh11389) 提供了一个最佳实践和[其它一些方案](http://csrc.nist.gov/publications/drafts/800-179/sp800_179_draft.pdf) [p. 41–42]，例如，为每天基本的工作建立一个单独的账号，使用管理员账号仅为了安装软件和配置系统。
+
+每一次都通过 macOS 登录界面进入管理员帐号并不是必须的。系统会在需要认证许可的时候弹出提示框，之后交给终端就行了。为了达到这个目的，Apple 为隐藏管理员账户和它的根
